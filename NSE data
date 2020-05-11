@@ -1,0 +1,215 @@
+# importing libraries
+
+import pandas as pd
+
+import numpy as np
+
+import datetime 
+import xlsxwriter
+
+
+from tkinter import * 
+from functools import partial
+
+
+from tkinter import messagebox
+
+
+
+# Importing CSV files
+#In [1]:
+
+def validateLogin(username, password):	
+
+    df1=pd.read_csv("cm27APR2020bhav.csv")
+
+    df2=pd.read_csv("cm28APR2020bhav.csv")
+
+    df3=pd.read_csv("cm29APR2020bhav.csv")
+
+    df4=pd.read_csv("cm30APR2020bhav.csv")
+
+
+
+
+    print(len(df1),len(df2),len(df3),len(df4))
+
+
+# Naming column last as last1, 
+#In [2]:
+
+    df1=df1.rename(columns={"LAST": "LAST1"})
+
+    dfx=pd.merge(df1[['SYMBOL','SERIES','LAST1']],df2[['SYMBOL','SERIES','LAST']], on=['SYMBOL','SERIES'])
+
+
+    dfx=dfx.rename(columns={"LAST": "LAST2"})
+
+
+
+    dfx=pd.merge(dfx,df3[['SYMBOL','SERIES','LAST']], on=['SYMBOL','SERIES'])
+
+
+    dfx=dfx.rename(columns={"LAST": "LAST3"})
+
+
+
+    dfx=pd.merge(dfx,df4[['SYMBOL','SERIES','LAST']], on=['SYMBOL','SERIES'])
+
+
+    dfx=dfx.rename(columns={"LAST": "LAST4"})
+
+
+
+    
+
+#Calculating the stack movement of each day
+#In [3]:
+
+    dfx['Stack_moment_28042020']=(dfx['LAST2']-dfx['LAST1'])/ dfx['LAST1']
+
+    dfx['Stack_moment_29042020']=(dfx['LAST3']-dfx['LAST2'])/ dfx['LAST1']
+
+    dfx['Stack_moment_30042020']=(dfx['LAST4']-dfx['LAST3'])/ dfx['LAST1']
+    dfx.to_csv('test_stock.csv', index=False, sep=',')
+
+#importing next 4 files 
+#In [4]:
+    ind1 = pd.read_csv("datanseindex270420.csv")
+    ind2 = pd.read_csv("datanseindex280420.csv")
+    ind3 = pd.read_csv("datanseindex290420.csv")
+
+    ind4 = pd.read_csv("datanseindex300420.csv")
+
+
+
+
+# concatinating the four files
+#In [5]:
+
+
+    ind_df = pd.concat([ind1, ind2, ind3, ind4])
+
+
+    ind_df["Prev Day Close"] = ind_df["Close"].shift(1)
+
+
+#Calculate the movement for index of each day
+#In [6]:
+
+    ind_df["Movement"] = (ind_df["Close"] - ind_df["Prev Day Close"]) / ind_df["Prev Day Close"]
+
+
+
+    ind_df['Date']=pd.to_datetime(ind_df['Date'], format='%d-%b-%Y')
+
+
+
+    ind_df.to_excel("f4.xlsx", sheet_name='sheet1', engine='xlsxwriter')
+
+    print("Movement for index for each day")
+
+    print("File is stored in EXCEL as f4")
+
+#User Input
+#In [7]:
+
+
+#startdate="27042020"
+  #enddate="28042020"
+
+
+    s_date=username.get()
+	
+    e_date=password.get()
+
+
+
+    s_date=datetime.datetime.strptime(s_date, '%d%m%Y').strftime('%d-%b-%Y')
+
+    e_date=datetime.datetime.strptime(e_date, '%d%m%Y').strftime('%d-%b-%Y')
+
+
+
+    if ("Movement_{}".format(s_date) in dfx.columns) or ("Movement_{}".format(e_date) in dfx.columns):
+
+	    
+
+           print(" Entered date in wrong format ")
+
+	
+    else:
+	
+           print( "Entered date in correct format")
+
+	
+
+    for i in range(int(s_date[:2]), int(e_date[:2])+1):
+
+
+
+          date_val = str(i) + "-Apr-2020"
+
+	
+
+    print(date_val)
+
+
+
+
+
+
+    current_ind=ind_df[ind_df['Date']== e_date]
+    ind_val=current_ind["Movement"]
+
+    
+    col_name='Stack_moment_'+e_date
+
+
+    stocks=dfx.describe()
+
+
+    print("Movement of stock for each day is stored in sheet1 of f5")
+
+    stocks.to_excel("f5.xlsx", sheet_name='sheet1', engine='xlsxwriter')
+
+
+
+
+#tkinter frame
+
+tkWindow = Tk() 
+
+
+tkWindow.geometry('1200x1200')  
+
+tkWindow.title('Tkinter Login Form - pythonexamples.org')
+
+usernameLabel = Label(tkWindow, text=" Starting Date : ").grid(row=0, column=0)
+
+username = StringVar()
+
+usernameEntry = Entry(tkWindow, textvariable=username).grid(row=0, column=1)  
+
+
+
+passwordLabel = Label(tkWindow,text=" Ending Dtate : ").grid(row=1, column=0)  
+
+password = StringVar()
+
+passwordEntry = Entry(tkWindow, textvariable=password).grid(row=1, column=1)  
+
+
+
+validateLogin = partial(validateLogin, username, password)
+loginButton = Button(tkWindow, text=" Generate Excel ", command=validateLogin).grid(row=4, column=0)
+
+
+
+
+
+
+ 
+
+tkWindow.mainloop()
+          
